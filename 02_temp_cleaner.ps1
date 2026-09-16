@@ -1,57 +1,64 @@
-# ===== LOG =====
+# Print messages using optional console colors.
 function Log($text, $color = "White") {
 
     switch ($color) {
-        "Green" { Write-Host $text -ForegroundColor Green }
-        "Red"   { Write-Host $text -ForegroundColor Red }
-        "Yellow"{ Write-Host $text -ForegroundColor Yellow }
-        default { Write-Host $text }
+        "Green"  { Write-Host $text -ForegroundColor Green }
+        "Red"    { Write-Host $text -ForegroundColor Red }
+        "Yellow" { Write-Host $text -ForegroundColor Yellow }
+        "Cyan"   { Write-Host $text -ForegroundColor Cyan }
+        default  { Write-Host $text }
     }
 }
 
-# ===== CLEAN =====
-function Clean-Folder($path) {
+function Clean-Folder($path, $displayName) {
 
     if (!(Test-Path $path)) {
-        Log "Nie istnieje: $path" "Red"
+        Log "Folder not found: $displayName" "Red"
         return
     }
 
-    Log "`n--- Czyszczenie: $path ---" "Yellow"
+    Log "`n--- Cleaning: $displayName ---" "Yellow"
 
     Get-ChildItem -Path $path -Force -ErrorAction SilentlyContinue | ForEach-Object {
 
+        # Store only the item name, without the full path.
+        $itemName = $_.Name
+
         try {
             Remove-Item $_.FullName -Recurse -Force -ErrorAction Stop
-            Log "OK: $($_.FullName)" "Green"
+            Log "OK: $itemName" "Green"
         }
         catch {
-            Log "BLAD: $($_.FullName)" "Red"
+            Log "ERROR: $itemName" "Red"
         }
     }
 }
-
-# ===== START =====
 
 Write-Host ""
 Write-Host "=== TEMP Cleaner ===" -ForegroundColor Cyan
 Write-Host ""
 
 $paths = @(
-    $env:TEMP,
-    "C:\Windows\Temp"
+    @{
+        Path = $env:TEMP
+        Name = "User TEMP"
+    },
+    @{
+        Path = "C:\Windows\Temp"
+        Name = "Windows TEMP"
+    }
 )
 
 foreach ($p in $paths) {
-    Clean-Folder $p
+    Clean-Folder $p.Path $p.Name
 }
 
-$answer = Read-Host "`nCzy wyczyscic Prefetch? (T/N)"
+$answer = Read-Host "`nClean the Prefetch folder? (Y/N)"
 
 if ($answer -match '^[TtYy]') {
-    Clean-Folder "C:\Windows\Prefetch"
+    Clean-Folder "C:\Windows\Prefetch" "Windows Prefetch"
 }
 
-Log "`nZakonczono." "Green"
+Log "`nCleanup completed." "Green"
 
 Pause

@@ -1,7 +1,6 @@
-Add-Type -AssemblyName System.Windows.Forms 
+Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 
-# ===== GUI =====
 $form = New-Object System.Windows.Forms.Form
 $form.Text = "TEMP Cleaner - GUI"
 $form.Size = New-Object System.Drawing.Size(700,500)
@@ -15,12 +14,12 @@ $logBox.Location = New-Object System.Drawing.Point(10,10)
 $logBox.ReadOnly = $true
 
 $btn = New-Object System.Windows.Forms.Button
-$btn.Text = "Czysc TEMP"
+$btn.Text = "Clean TEMP"
 $btn.Size = New-Object System.Drawing.Size(200,40)
 $btn.Location = New-Object System.Drawing.Point(10,370)
 
 $chkPrefetch = New-Object System.Windows.Forms.CheckBox
-$chkPrefetch.Text = "Czysc Prefetch (ryzykowne)"
+$chkPrefetch.Text = "Clean Prefetch (use with caution)"
 $chkPrefetch.Location = New-Object System.Drawing.Point(230,380)
 $chkPrefetch.Size = New-Object System.Drawing.Size(250,20)
 
@@ -28,58 +27,66 @@ $form.Controls.Add($logBox)
 $form.Controls.Add($btn)
 $form.Controls.Add($chkPrefetch)
 
-# ===== LOG =====
+# Append colored messages to the log window.
 function Log($text, $color = "Black") {
     $logBox.SelectionColor = [System.Drawing.Color]::$color
     $logBox.AppendText("$text`r`n")
     $logBox.ScrollToCaret()
 }
 
-# ===== CLEAN =====
-function Clean-Folder($path) {
+function Clean-Folder($path, $displayName) {
 
     if (!(Test-Path $path)) {
-        Log "Nie istnieje: $path" "Red"
+        Log "Folder not found: $displayName" "Red"
         return
     }
 
-    Log "`n--- Czyszczenie: $path ---"
+    Log "`n--- Cleaning: $displayName ---" "Black"
 
     Get-ChildItem -Path $path -Force -ErrorAction SilentlyContinue | ForEach-Object {
 
         $file = $_
 
+        # Display only the item name, without the full path.
+        $itemName = $file.Name
+
         try {
             Remove-Item $file.FullName -Recurse -Force -ErrorAction Stop
-            Log "OK: $($file.FullName)" "Green"
+            Log "OK: $itemName" "Green"
         }
         catch {
-            Log "BLAD: $($file.FullName)" "Red"
+            Log "ERROR: $itemName" "Red"
         }
     }
 }
 
-# ===== BUTTON =====
 $btn.Add_Click({
 
     $logBox.Clear()
 
-    Log "Start czyszczenia..."
+    Log "Starting cleanup..." "Black"
 
     $paths = @(
-        $env:TEMP,
-        "C:\Windows\Temp"
+        @{
+            Path = $env:TEMP
+            Name = "User TEMP"
+        },
+        @{
+            Path = "C:\Windows\Temp"
+            Name = "Windows TEMP"
+        }
     )
 
     foreach ($p in $paths) {
-        Clean-Folder $p
+        Clean-Folder $p.Path $p.Name
     }
 
+    # Prefetch cleanup is optional because it may temporarily affect application startup performance.
     if ($chkPrefetch.Checked) {
-        Clean-Folder "C:\Windows\Prefetch"
+        Clean-Folder "C:\Windows\Prefetch" "Windows Prefetch"
     }
 
-    Log "`nZakonczono."
+    Log "`nCleanup completed." "Green"
 })
 
 $form.ShowDialog()

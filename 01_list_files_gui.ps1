@@ -1,24 +1,23 @@
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 
-# ===== GUI =====
 $form = New-Object System.Windows.Forms.Form
-$form.Text = "Eksport nazw plikow do TXT"
+$form.Text = "Export File Names to TXT"
 $form.Size = New-Object System.Drawing.Size(600,250)
 $form.StartPosition = "CenterScreen"
 
 $label = New-Object System.Windows.Forms.Label
-$label.Text = "Nie wybrano folderu"
+$label.Text = "No folder selected"
 $label.Size = New-Object System.Drawing.Size(560,20)
 $label.Location = New-Object System.Drawing.Point(10,20)
 
 $btnBrowse = New-Object System.Windows.Forms.Button
-$btnBrowse.Text = "Wybierz folder"
+$btnBrowse.Text = "Select Folder"
 $btnBrowse.Size = New-Object System.Drawing.Size(150,40)
 $btnBrowse.Location = New-Object System.Drawing.Point(10,60)
 
 $btnSave = New-Object System.Windows.Forms.Button
-$btnSave.Text = "Zapisz do TXT"
+$btnSave.Text = "Save to TXT"
 $btnSave.Size = New-Object System.Drawing.Size(150,40)
 $btnSave.Location = New-Object System.Drawing.Point(170,60)
 
@@ -33,44 +32,43 @@ $form.Controls.Add($btnBrowse)
 $form.Controls.Add($btnSave)
 $form.Controls.Add($log)
 
-# ===== zmienna folderu =====
 $global:folderPath = $null
 
+# Append messages to the log window.
 function Log($text) {
     $log.AppendText("$text`r`n")
 }
 
-# ===== wybór folderu =====
 $btnBrowse.Add_Click({
+
     $dialog = New-Object System.Windows.Forms.FolderBrowserDialog
-    $dialog.Description = "Wybierz folder"
+    $dialog.Description = "Select a folder"
 
     if ($dialog.ShowDialog() -eq "OK") {
         $global:folderPath = $dialog.SelectedPath
-        $label.Text = "Wybrany folder: $global:folderPath"
-        Log "Wybrano: $global:folderPath"
+        $label.Text = "Selected folder: $global:folderPath"
+        Log "Selected: $global:folderPath"
     }
 })
 
-# ===== zapis do TXT =====
 $btnSave.Add_Click({
 
     if (-not $global:folderPath) {
-        Log "Nie wybrano folderu!"
+        Log "No folder selected!"
         return
     }
 
     try {
-        $outputFile = Join-Path $global:folderPath "lista_plikow.txt"
+        $outputFile = Join-Path $global:folderPath "file_list.txt"
 
         Get-ChildItem -Path $global:folderPath -File |
             Select-Object -ExpandProperty Name |
             Out-File -Encoding UTF8 $outputFile
 
-        Log "Zapisano: $outputFile"
+        Log "Saved: $outputFile"
     }
     catch {
-        Log "BLAD: $($_.Exception.Message)"
+        Log "ERROR: $($_.Exception.Message)"
     }
 })
 
